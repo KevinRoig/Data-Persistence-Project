@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
@@ -12,20 +13,23 @@ public class MainManager : MonoBehaviour
 
     public Text ScoreText;
     public GameObject GameOverText;
-    
+    public GameObject welcomeText;
+    public GameObject HighScoreText;
+
     private bool m_Started = false;
     private int m_Points;
-    
-    private bool m_GameOver = false;
 
-    
+    private bool m_GameOver = false;
+    public string currentPlayerName;
+
+
     // Start is called before the first frame update
     void Start()
     {
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
-        
-        int[] pointCountArray = new [] {1,1,2,2,5,5};
+
+        int[] pointCountArray = new[] { 1, 1, 2, 2, 5, 5 };
         for (int i = 0; i < LineCount; ++i)
         {
             for (int x = 0; x < perLine; ++x)
@@ -36,10 +40,28 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        StartCoroutine(ShowPlayerName());
+        ShowHighScore();
+    }
+
+    IEnumerator ShowPlayerName()
+    {
+        currentPlayerName = MenuManager.instance.currentPlayerName;
+        welcomeText.GetComponent<Text>().text = "Welcome " + currentPlayerName + " !";
+
+        yield return new WaitForSeconds(2);
+        welcomeText.SetActive(false);
+    }
+
+    private void ShowHighScore()
+    {
+        MenuManager.instance.LoadPlayerInfos();
+        Debug.Log("high score is " + MenuManager.instance.highScore);
+        HighScoreText.GetComponent<Text>().text = "High Score : " + (MenuManager.instance.highScore) + " by " + (MenuManager.instance.highestScorePlayerName);
     }
 
     private void Update()
-    {
+    {        
         if (!m_Started)
         {
             if (Input.GetKeyDown(KeyCode.Space))
@@ -70,6 +92,16 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        if(m_Points > MenuManager.instance.highScore)
+        {
+            MenuManager.instance.highestScorePlayerName = currentPlayerName;
+            MenuManager.instance.highScore = m_Points;
+                    Debug.Log(MenuManager.instance.highScore);
+
+            MenuManager.instance.SavePlayerInfos();
+            ShowHighScore();
+        }
+
         m_GameOver = true;
         GameOverText.SetActive(true);
     }
